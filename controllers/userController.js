@@ -136,3 +136,51 @@ export const validationUser = async (req, res) => {
         }
     });
 };
+
+export const getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find().select('-password'); // Excluimos las contraseñas
+        return res.status(200).json({ status: 200, data: users });
+    } catch (error) {
+        return res.status(500).json({ status: 'error', message: 'Error al obtener los usuarios' });
+    }
+};
+
+export const updateUser = async (req, res) => {
+    const { userId } = req.params; // ID del usuario a actualizar
+    const { username, email, password } = req.body;
+
+    try {
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ status: 404, message: 'Usuario no encontrado' });
+        }
+
+        // Actualización de email, username o password
+        if (username) user.username = username;
+        if (email) {
+            const domainRegex = /^[a-zA-Z0-9._%+-]+@amigo\.edu\.co$/;
+            if (!domainRegex.test(email)) {
+                return res.status(400).json({ status: 400, message: 'El correo electrónico debe tener el dominio @amigo.edu.co' });
+            }
+            user.email = email;
+        }
+        if (password) {
+            const passwordRequirements = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+            if (!passwordRequirements.test(password)) {
+                return res.status(400).json({
+                    status: 400,
+                    message: 'La contraseña debe tener al menos 8 caracteres, incluir una letra mayúscula, una minúscula, un número y un carácter especial.'
+                });
+            }
+            user.password = await bcrypt.hash(password, 10); // Actualizar y encriptar la nueva contraseña
+        }
+
+        await user.save();
+
+        return res.status(200).json({ status: 200, message: 'Usuario actualizado exitosamente' });
+    } catch (error) {
+        return res.status(500).json({ status: 'error', message: 'Error al actualizar el usuario', error: error.message });
+    }
+};

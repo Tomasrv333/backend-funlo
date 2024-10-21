@@ -1,11 +1,25 @@
-// routes/courseRoutes.js
 import express from 'express';
-import { createCourse, getCourses } from '../controllers/courseController.js';
+import { createCourse, updateCourse, deleteCourse, addComment, rateCourse, getCourses  } from '../controllers/courseController.js';
 import { authenticate } from '../middlewares/auth.js';
 
 const router = express.Router();
 
-router.post('/', authenticate, createCourse);
-router.get('/', getCourses);
+// Crear un nuevo curso
+router.post('/courses', authenticate, createCourse);
+
+// Actualizar un curso
+router.put('/courses/:courseId', authenticate, updateCourse);
+
+// Eliminar un curso
+router.delete('/courses/:courseId', authenticate, deleteCourse);
+
+// Agregar un comentario a un curso
+router.post('/courses/:courseId/comments', authenticate, addComment);
+
+// Calificar un curso
+router.post('/courses/:courseId/rate', authenticate, rateCourse);
+
+// Obtener los cursos
+router.get('/', authenticate, getCourses);
 
 export default router;

@@ -3,6 +3,7 @@ import connectDB from './config/db.js'; // Asegúrate de usar .js en la importac
 import userRoutes from './routes/userRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
 import forumRoutes from './routes/forumRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
 import 'dotenv/config';
 
 const app = express();
@@ -13,6 +14,7 @@ connectDB()
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/forums', forumRoutes);
+app.use('/api/categories', categoryRoutes);
 
 try {
     const PORT = process.env.PORT || 3000;
