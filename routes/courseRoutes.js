@@ -5,7 +5,10 @@ import { authenticate } from '../middlewares/auth.js';
 const router = express.Router();
 
 // Crear un nuevo curso
-router.post('/courses', authenticate, createCourse);
+router.post('/new', authenticate, createCourse);
+
+// Obtener un curso
+router.get('/:courseId', authenticate, getCourses);
 
 // Actualizar un curso
 router.put('/courses/:courseId', authenticate, updateCourse);

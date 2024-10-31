@@ -3,26 +3,27 @@ import mongoose from 'mongoose';
 
 // Crear un nuevo curso
 export const createCourse = async (req, res) => {
-  const { title, description, creatorId, categoryId } = req.body;
+  const { title, description, url, creatorId, categoryId } = req.body;
 
   // Validación de IDs
   if (!mongoose.Types.ObjectId.isValid(creatorId) || !mongoose.Types.ObjectId.isValid(categoryId)) {
-    return res.status(400).json({ message: 'ID de creador o categoría no válidos' });
+    return res.status(400).json({ message: 'ID de creador o categoría no válidos', status: 400 });
   }
 
   try {
     const newCourse = new Course({
       title,
       description,
+      url,
       creatorId: new mongoose.Types.ObjectId(creatorId), // Convertir el id a ObjectId
       categoryId: new mongoose.Types.ObjectId(categoryId),
     });
 
     await newCourse.save();
-    res.status(201).json({ message: 'Curso creado exitosamente', course: newCourse });
+    res.status(201).json({ message: 'Curso creado exitosamente', status: 200, course: newCourse });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error al crear el curso' });
+    res.status(500).json({ message: 'Error al crear el curso', status: 500 });
   }
 };
 
@@ -139,47 +140,54 @@ export const rateCourse = async (req, res) => {
 
 // Controlador para obtener los cursos
 export const getCourses = async (req, res) => {
-  try {
-    // Extraer filtros de la query
-    const { categoryId, title, rating, startDate, endDate } = req.query;
+  const { courseId } = req.params; // Obtiene courseId de los parámetros de la ruta
+  const { categoryId, title, rating, startDate, endDate } = req.query; // Extrae los filtros de la query
 
-    // Crear un objeto de filtros dinámico
+  try {
+    // Si se proporciona un ID de curso, devuelve solo ese curso
+    if (courseId) {
+      const course = await Course.findById(courseId)
+        .populate('categoryId', 'name') // Mostrar información de la categoría
+        .populate('creatorId', 'name'); // Mostrar nombre del creador
+
+      if (!course) {
+        return res.status(404).json({ message: 'Curso no encontrado' });
+      }
+
+      return res.status(200).json(course); // Devuelve el curso específico
+    }
+
+    // Si no se proporciona un ID, aplica los filtros para obtener una lista de cursos
     let filters = {};
 
-    // Filtrar por categoría (si se proporciona)
     if (categoryId) {
       filters.categoryId = categoryId;
     }
 
-    // Filtrar por título (si se proporciona)
     if (title) {
-      filters.title = { $regex: title, $options: 'i' };  // Filtro "like" para buscar por título
+      filters.title = { $regex: title, $options: 'i' };
     }
 
-    // Filtrar por calificación mínima (si se proporciona)
     if (rating) {
-      filters.averageRating = { $gte: Number(rating) };  // Solo cursos con calificación >= rating
+      filters.averageRating = { $gte: Number(rating) };
     }
 
-    // Filtrar por fechas (si se proporciona)
     if (startDate || endDate) {
       filters.createdAt = {};
       if (startDate) {
-        filters.createdAt.$gte = new Date(startDate);  // Cursos creados desde esta fecha
+        filters.createdAt.$gte = new Date(startDate);
       }
       if (endDate) {
-        filters.createdAt.$lte = new Date(endDate);  // Cursos creados hasta esta fecha
+        filters.createdAt.$lte = new Date(endDate);
       }
     }
 
-    // Obtener los cursos que cumplen con los filtros
     const courses = await Course.find(filters)
-      .populate('categoryId', 'name')  // Para mostrar la información de la categoría (nombre)
-      .populate('creatorId', 'name')   // Para mostrar el nombre del creador (si es necesario)
-      .sort({ createdAt: -1 });  // Ordenar por fecha de creación (más recientes primero)
+      .populate('categoryId', 'name')
+      .populate('creatorId', 'name')
+      .sort({ createdAt: -1 });
 
-    // Enviar la lista de cursos como respuesta
-    res.status(200).json(courses);
+    res.status(200).json(courses); // Devuelve la lista de cursos
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error al obtener los cursos.' });

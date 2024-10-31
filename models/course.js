@@ -1,8 +1,19 @@
 import mongoose from 'mongoose';
 
+const youtubeUrlRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+
 const courseSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
+  url: {
+    type: String,
+    validate: {
+      validator: function(v) {
+        return youtubeUrlRegex.test(v);
+      },
+      message: props => `${props.value} no es una URL válida de YouTube!`
+    }
+  },
   creatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Date, default: Date.now },
   comments: [{

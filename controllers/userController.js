@@ -99,12 +99,12 @@ export const validationUser = async (req, res) => {
     const token = req.headers['authorization']?.split(' ')[1]; // Obtener el token del encabezado
 
     if (!token) {
-        return res.status(401).json({ status: 'error', message: 'Token no proporcionado' });
+        return res.status(401).json({ status: 401, message: 'Token no proporcionado' });
     }
 
     jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
         if (err) {
-            return res.status(403).json({ status: 'error', message: 'Token inválido' });
+            return res.status(403).json({ status: 403, message: 'Token inválido' });
         }
 
         // Obtener el ID del usuario desde el token decodificado
@@ -115,7 +115,7 @@ export const validationUser = async (req, res) => {
             const user = await User.findById(userId); // Cambia esto si usas otro método para buscar usuarios
 
             if (!user) {
-                return res.status(404).json({ status: 'error', message: 'Usuario no encontrado' });
+                return res.status(404).json({ status: 400, message: 'Usuario no encontrado' });
             }
 
             // Devolver la data del usuario junto con el estado de validación
@@ -131,7 +131,7 @@ export const validationUser = async (req, res) => {
             });
         } catch (error) {
             console.error('Error al buscar el usuario:', error);
-            return res.status(500).json({ status: 'error', message: 'Error en el servidor' });
+            return res.status(500).json({ status: 500, message: 'Error en el servidor' });
         }
     });
 };
@@ -141,7 +141,7 @@ export const getAllUsers = async (req, res) => {
         const users = await User.find().select('-password'); // Excluimos las contraseñas
         return res.status(200).json({ status: 200, data: users });
     } catch (error) {
-        return res.status(500).json({ status: 'error', message: 'Error al obtener los usuarios' });
+        return res.status(500).json({ status: 500, message: 'Error al obtener los usuarios' });
     }
 };
 
@@ -180,6 +180,6 @@ export const updateUser = async (req, res) => {
 
         return res.status(200).json({ status: 200, message: 'Usuario actualizado exitosamente' });
     } catch (error) {
-        return res.status(500).json({ status: 'error', message: 'Error al actualizar el usuario', error: error.message });
+        return res.status(500).json({ status: 500, message: 'Error al actualizar el usuario', error: error.message });
     }
 };
