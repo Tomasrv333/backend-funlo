@@ -183,11 +183,23 @@ export const getCourses = async (req, res) => {
     }
 
     const courses = await Course.find(filters)
-      .populate('categoryId', 'name')
-      .populate('creatorId', 'name')
+      .populate('categoryId', 'name') // Información de la categoría
+      .populate('creatorId', 'username') // Información del creador (username)
+      .select('url title description averageRating creatorId') // Seleccionamos los campos específicos
       .sort({ createdAt: -1 });
 
-    res.status(200).json(courses); // Devuelve la lista de cursos
+    // Devolvemos la lista de cursos con los datos específicos
+    const coursesData = courses.map(course => ({
+      _id: course._id,
+      url: course.url,
+      title: course.title,
+      description: course.description,
+      author: course.creatorId.username, // Nombre de usuario del creador
+      date: course.createdAt,
+      rating: course.averageRating, // Calificación promedio
+    }));
+
+    res.status(200).json(coursesData);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error al obtener los cursos.' });
