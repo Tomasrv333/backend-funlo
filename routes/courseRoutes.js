@@ -11,16 +11,16 @@ router.post('/new', authenticate, createCourse);
 router.get('/:courseId', authenticate, getCourses);
 
 // Actualizar un curso
-router.put('/courses/:courseId', authenticate, updateCourse);
+router.put('/:courseId/update', authenticate, updateCourse);
 
 // Eliminar un curso
-router.delete('/courses/:courseId', authenticate, deleteCourse);
+router.delete('/:courseId/delete', authenticate, deleteCourse);
 
 // Agregar un comentario a un curso
-router.post('/courses/:courseId/comments', authenticate, addComment);
+router.post('/:courseId/comments', authenticate, addComment);
 
 // Calificar un curso
-router.post('/courses/:courseId/rate', authenticate, rateCourse);
+router.post('/:courseId/rate', authenticate, rateCourse);
 
 // Obtener los cursos
 router.get('/', authenticate, getCourses);

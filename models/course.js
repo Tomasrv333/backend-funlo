@@ -27,11 +27,11 @@ const courseSchema = new mongoose.Schema({
     required: true,
     validate: {
       validator: function(v) {
-        return /^https?:\/\/.*\.(jpg|jpeg|png|gif)$/i.test(v); // Validar que sea una URL de imagen
+        return /^https?:\/\/.*\.(jpg|jpeg|png|gif)(\?.*)?$/i.test(v);
       },
       message: props => `${props.value} no es una URL válida de imagen!`
     }
-  },
+  },  
   creatorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Date, default: Date.now },
   comments: [{
@@ -46,7 +46,7 @@ const courseSchema = new mongoose.Schema({
   averageRating: { type: Number, default: 0, min: 0, max: 5 },
   categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
   // Agregar un campo para el área
-  areaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Area', required: true },
+  areaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
 });
 
 // Exportar el modelo de curso
