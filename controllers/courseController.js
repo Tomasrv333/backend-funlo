@@ -3,20 +3,34 @@ import mongoose from 'mongoose';
 
 // Crear un nuevo curso
 export const createCourse = async (req, res) => {
-  const { title, description, url, creatorId, categoryId } = req.body;
+  const { title, description, videos, creatorId, categoryId, areaId, thumbnailUrl } = req.body;
 
   // Validación de IDs
-  if (!mongoose.Types.ObjectId.isValid(creatorId) || !mongoose.Types.ObjectId.isValid(categoryId)) {
-    return res.status(400).json({ message: 'ID de creador o categoría no válidos', status: 400 });
+  if (!mongoose.Types.ObjectId.isValid(creatorId) || !mongoose.Types.ObjectId.isValid(categoryId) || !mongoose.Types.ObjectId.isValid(areaId)) {
+    return res.status(400).json({ message: 'ID de creador, categoría o área no válidos', status: 400 });
+  }
+
+  // Validación de los videos (debe ser un arreglo de objetos con la URL de YouTube válida)
+  if (videos && !Array.isArray(videos)) {
+    return res.status(400).json({ message: 'El campo "videos" debe ser un arreglo de objetos' });
+  }
+  if (videos) {
+    for (const video of videos) {
+      if (!video.title || !video.url || !youtubeUrlRegex.test(video.url)) {
+        return res.status(400).json({ message: 'URL del video no válida en el arreglo de videos', status: 400 });
+      }
+    }
   }
 
   try {
     const newCourse = new Course({
       title,
       description,
-      url,
-      creatorId: new mongoose.Types.ObjectId(creatorId), // Convertir el id a ObjectId
+      videos,
+      creatorId: new mongoose.Types.ObjectId(creatorId),
       categoryId: new mongoose.Types.ObjectId(categoryId),
+      areaId: new mongoose.Types.ObjectId(areaId),
+      thumbnailUrl,
     });
 
     await newCourse.save();
@@ -30,7 +44,19 @@ export const createCourse = async (req, res) => {
 // Actualizar un curso existente
 export const updateCourse = async (req, res) => {
   const { courseId } = req.params;
-  const { title, description, categoryId } = req.body;
+  const { title, description, videos, categoryId, areaId, thumbnailUrl } = req.body;
+
+  // Validación de los videos (si se proporcionan)
+  if (videos && !Array.isArray(videos)) {
+    return res.status(400).json({ message: 'El campo "videos" debe ser un arreglo de objetos' });
+  }
+  if (videos) {
+    for (const video of videos) {
+      if (!video.title || !video.url || !youtubeUrlRegex.test(video.url)) {
+        return res.status(400).json({ message: 'URL del video no válida en el arreglo de videos', status: 400 });
+      }
+    }
+  }
 
   try {
     const updatedCourse = await Course.findByIdAndUpdate(
@@ -38,7 +64,10 @@ export const updateCourse = async (req, res) => {
       {
         title,
         description,
-        categoryId: mongoose.Types.ObjectId(categoryId), // Convertir el id a ObjectId
+        videos,
+        categoryId: mongoose.Types.ObjectId(categoryId),
+        areaId: mongoose.Types.ObjectId(areaId),
+        thumbnailUrl,
       },
       { new: true } // Retorna el curso actualizado
     );
@@ -141,33 +170,37 @@ export const rateCourse = async (req, res) => {
 // Controlador para obtener los cursos
 export const getCourses = async (req, res) => {
   const { courseId } = req.params; // Obtiene courseId de los parámetros de la ruta
-  const { categoryId, title, rating, startDate, endDate } = req.query; // Extrae los filtros de la query
+  const { areaId, categoryId, title, rating, startDate, endDate } = req.query; // Extrae los filtros de la query
 
   try {
     // Si se proporciona un ID de curso, devuelve solo ese curso
     if (courseId) {
       const course = await Course.findById(courseId)
         .populate('categoryId', 'name') // Mostrar información de la categoría
-        .populate('creatorId', 'name'); // Mostrar nombre del creador
+        .populate('creatorId', 'name') // Mostrar nombre del creador
+        .populate('areaId', 'name'); // Información del área
 
       if (!course) {
-        return res.status(404).json({ message: 'Curso no encontrado' });
+        return res.status(204).json({ message: 'Curso no encontrado' });
       }
 
       return res.status(200).json(course); // Devuelve el curso específico
     }
 
-    // Si no se proporciona un ID, aplica los filtros para obtener una lista de cursos
+    // Construcción de filtros para la consulta
     let filters = {};
 
-    if (categoryId) {
-      filters.categoryId = categoryId;
+    if (areaId) {
+      filters.areaId = areaId;
+      if (categoryId) {
+        filters.categoryId = categoryId;
+      }
     }
-
+    
     if (title) {
       filters.title = { $regex: title, $options: 'i' };
     }
-
+    
     if (rating) {
       filters.averageRating = { $gte: Number(rating) };
     }
@@ -182,24 +215,38 @@ export const getCourses = async (req, res) => {
       }
     }
 
+    // Consultar cursos según los filtros
     const courses = await Course.find(filters)
-      .populate('categoryId', 'name') // Información de la categoría
-      .populate('creatorId', 'username') // Información del creador (username)
-      .select('url title description averageRating creatorId') // Seleccionamos los campos específicos
+      .populate('categoryId', 'name')
+      .populate('creatorId', 'username')
+      .populate('areaId', 'name')
+      .select('url title description averageRating creatorId thumbnailUrl videos createdAt')
       .sort({ createdAt: -1 });
 
-    // Devolvemos la lista de cursos con los datos específicos
+    // Si no hay cursos y existen filtros, enviar un mensaje adecuado
+    if (!courses.length && Object.keys(filters).length > 0) {
+      return res.status(204).json({ message: 'No se encontraron cursos con los filtros aplicados.' });
+    }
+
+    // Procesar cursos para responder en formato deseado
     const coursesData = courses.map(course => ({
       _id: course._id,
       url: course.url,
       title: course.title,
       description: course.description,
-      author: course.creatorId.username, // Nombre de usuario del creador
+      author: course.creatorId.username,
       date: course.createdAt,
-      rating: course.averageRating, // Calificación promedio
+      rating: course.averageRating,
+      thumbnailUrl: course.thumbnailUrl,
+      videos: course.videos.map(video => ({
+        title: video.title,
+        url: video.url,
+        createdAt: video.createdAt,
+      })),
     }));
 
     res.status(200).json(coursesData);
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error al obtener los cursos.' });
