@@ -221,7 +221,7 @@ export const addCourseToFavorites = async (req, res) => {
 // Obtener y filtrar cursos
 export const getCourses = async (req, res) => {
   const { courseId } = req.params; // Obtiene courseId de los parámetros de la ruta
-  const { areaId, categoryId, title, rating, startDate, endDate, userId, favoritesOnly } = req.query; // Extrae los filtros de la query
+  const { name, areaId, categoryId, title, rating, startDate, endDate, userId, favoritesOnly } = req.query; // Extrae los filtros de la query
 
   try {
     // Si se proporciona un ID de curso, devuelve solo ese curso
@@ -270,6 +270,10 @@ export const getCourses = async (req, res) => {
     if (userId) {
       filters.creatorId = userId; // Filtra por el ID del creador del curso
     }
+
+    if (name) {
+      filters.title = { $regex: name, $options: 'i' }; // Filtra por título (name)
+    }    
 
     if (areaId) {
       filters.areaId = areaId;
