@@ -1,5 +1,5 @@
 import express from 'express';
-import { createCourse, updateCourse, deleteCourse, addComment, rateCourse, getCourses  } from '../controllers/courseController.js';
+import { createCourse, updateCourse, deleteCourse, addComment, rateCourse, getCourses, addCourseToFavorites } from '../controllers/courseController.js';
 import { authenticate } from '../middlewares/auth.js';
 
 const router = express.Router();
@@ -21,6 +21,9 @@ router.post('/:courseId/comments', authenticate, addComment);
 
 // Calificar un curso
 router.post('/:courseId/rate', authenticate, rateCourse);
+
+// Ruta para agregar un curso a los favoritos
+router.post('/:courseId/favorites', authenticate, addCourseToFavorites);
 
 // Obtener los cursos
 router.get('/', authenticate, getCourses);

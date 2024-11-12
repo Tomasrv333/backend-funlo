@@ -47,6 +47,11 @@ const courseSchema = new mongoose.Schema({
   categoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
   // Agregar un campo para el área
   areaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+  // Campo para almacenar los usuarios que han marcado el curso como favorito
+  favorites: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    addedAt: { type: Date, default: Date.now }
+  }]
 });
 
 // Exportar el modelo de curso

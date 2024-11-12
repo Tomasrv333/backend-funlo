@@ -1,4 +1,5 @@
 import Course from '../models/course.js'; // Asegúrate de tener la ruta correcta
+import User from '../models/user.js';
 import mongoose from 'mongoose';
 
 // Expresión regular para validar URL de YouTube
@@ -183,10 +184,44 @@ export const rateCourse = async (req, res) => {
   }
 };
 
+// Añadir curso a favorito
+export const addCourseToFavorites = async (req, res) => {
+  const { courseId } = req.params;
+  const { userId } = req.body; // El id del usuario se obtiene del cuerpo de la solicitud
+
+  try {
+    // Verificar si el curso existe
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Curso no encontrado' });
+    }
+
+    // Verificar si el usuario existe
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Verificar si el curso ya está en los favoritos del usuario
+    if (user.favorites.includes(courseId)) {
+      return res.status(400).json({ message: 'Este curso ya está en tus favoritos' });
+    }
+
+    // Agregar el curso a los favoritos
+    user.favorites.push(courseId);
+    await user.save();
+
+    res.status(200).json({ message: 'Curso agregado a favoritos exitosamente' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al agregar el curso a favoritos' });
+  }
+};
+
 // Obtener y filtrar cursos
 export const getCourses = async (req, res) => {
   const { courseId } = req.params; // Obtiene courseId de los parámetros de la ruta
-  const { areaId, categoryId, title, rating, startDate, endDate, userId } = req.query; // Extrae los filtros de la query
+  const { areaId, categoryId, title, rating, startDate, endDate, userId, favoritesOnly } = req.query; // Extrae los filtros de la query
 
   try {
     // Si se proporciona un ID de curso, devuelve solo ese curso
@@ -259,6 +294,18 @@ export const getCourses = async (req, res) => {
       if (endDate) {
         filters.createdAt.$lte = new Date(endDate);
       }
+    }
+
+    // Verificar si solo se solicitan cursos favoritos
+    if (favoritesOnly === 'true' && userId) {
+      const user = await User.findById(userId).populate('favorites'); // Suponiendo que el usuario tiene un campo 'favorites' con los cursos favoritos
+
+      if (!user) {
+        return res.status(404).json({ message: 'Usuario no encontrado' });
+      }
+
+      // Filtrar los favoritos del usuario en el array `user.favorites`
+      filters._id = { $in: user.favorites.map(fav => fav._id) };
     }
 
     // Consultar cursos según los filtros
