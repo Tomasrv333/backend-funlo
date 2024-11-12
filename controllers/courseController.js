@@ -255,7 +255,7 @@ export const getCourses = async (req, res) => {
           createdAt: video.createdAt,
         })),
         comments: course.comments.map(comment => ({
-          author: comment.userId.username,
+          author: comment.userId ? comment.userId.username : 'Usuario desconocido',
           comment: comment.comment,
           date: comment.createdAt,
         })),
