@@ -86,6 +86,7 @@ export const loginUser = async (req, res) => {
                 status: 200,
                 message: 'Login exitoso',
                 token: token, // También devolver el token en el cuerpo de la respuesta (opcional)
+                userId: user._id,
             });
         } else {
             return res.status(401).json({ status: 401, message: 'Credenciales inválidas' });
